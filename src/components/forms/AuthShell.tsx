@@ -52,7 +52,7 @@ export function AuthShell({
             accessibilityLabel="Close"
             style={[styles.close, { backgroundColor: colors.card }]}
           >
-            <Icon name={router.canGoBack() ? "arrow-left" : "x"} size={18} />
+            <Icon name="x" size={18} />
           </Pressable>
 
           <Animated.View entering={FadeInUp.duration(500).springify().damping(14)} style={styles.logoWrap}>

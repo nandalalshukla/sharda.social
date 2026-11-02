@@ -2,6 +2,7 @@ import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/react-qu
 import { useMemo } from "react";
 import * as library from "@/api/library";
 import type { LibraryResource, ResourceKind, SearchResult } from "@/api/types";
+import { uploaderName } from "@/utils/format";
 import { CURATED_NOTES, CURATED_PROGRAM, CURATED_SYLLABUS, CuratedItem } from "@/data/curated";
 
 /**
@@ -65,7 +66,7 @@ export const fromResource = (kind: ResourceKind, r: LibraryResource): LibraryEnt
   files: [r.fileUrl],
   source: "community",
   resourceId: r._id,
-  contributor: typeof r.userId === "object" ? r.userId.username : undefined,
+  contributor: uploaderName(r.userId),
 });
 
 const norm = (s: string) => s.replace(/\s+/g, "").toLowerCase();
@@ -183,6 +184,6 @@ export const searchResultToEntry = (r: SearchResult): LibraryEntry => {
     files: r.fileUrl ? [r.fileUrl] : [],
     source: "community",
     resourceId: r._id,
-    contributor: typeof r.userId === "object" ? r.userId.username : undefined,
+    contributor: uploaderName(r.userId),
   };
 };

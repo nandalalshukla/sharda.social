@@ -6,7 +6,7 @@ import { KIND_META, KIND_ORDER } from "@/constants/library";
 import { useModActions, usePendingResources } from "@/hooks/moderation";
 import { getErrorMessage } from "@/api/errors";
 import { openDocument } from "@/utils/files";
-import { formatDate, ordinal } from "@/utils/format";
+import { formatDate, ordinal, uploaderName } from "@/utils/format";
 import { PanelList } from "./PanelList";
 import { RejectSheet } from "./RejectSheet";
 
@@ -57,7 +57,7 @@ export function SubmissionsPanel() {
               {r.year ? <Badge label={r.year} variant="neutral" /> : null}
             </View>
             <Text variant="small" tone="muted">
-              {r.program} · by {typeof r.userId === "object" ? `@${r.userId.username}` : "a student"} · {formatDate(r.createdAt)}
+              {r.program} · by {uploaderName(r.userId) ? `@${uploaderName(r.userId)}` : "a student"} · {formatDate(r.createdAt)}
             </Text>
             <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
               <Button title="View file" icon="eye" size="sm" variant="outline" onPress={() => openDocument(r.fileUrl).catch((e) => toast.error(getErrorMessage(e)))} />

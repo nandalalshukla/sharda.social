@@ -9,7 +9,7 @@ import { Badge, Button, Card, confirmDialog, Pills, Text, toast } from "@/compon
 import { KIND_META, KIND_ORDER } from "@/constants/library";
 import { useAdminActions, useAdminContent, useContentCounts } from "@/hooks/moderation";
 import { openDocument } from "@/utils/files";
-import { formatDate, ordinal } from "@/utils/format";
+import { formatDate, ordinal, uploaderName } from "@/utils/format";
 
 const STATUS_VARIANT = { approved: "success", pending: "warning", rejected: "destructive" } as const;
 
@@ -73,7 +73,7 @@ export function ContentPanel() {
               {r.courseCode} · {ordinal(r.semester)} sem{r.year ? ` · ${r.year}` : ""} · {r.program}
             </Text>
             <Text variant="caption" tone="muted" weight="regular">
-              {typeof r.userId === "object" ? `by @${r.userId.username} · ` : ""}
+              {uploaderName(r.userId) ? `by @${uploaderName(r.userId)} · ` : ""}
               {formatDate(r.createdAt)}
               {r.status === "rejected" && r.rejectionReason ? ` · ${r.rejectionReason}` : ""}
             </Text>

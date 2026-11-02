@@ -42,3 +42,7 @@ export const ordinal = (n: number) => {
   const v = n % 100;
   return `${n}${s[(v - 20) % 10] || s[v] || s[0]}`;
 };
+
+/** Username of a populated uploader, or undefined if it is an id string, missing, or the account was deleted (null). */
+export const uploaderName = (userId: unknown): string | undefined =>
+  userId && typeof userId === "object" ? (userId as { username?: string }).username : undefined;

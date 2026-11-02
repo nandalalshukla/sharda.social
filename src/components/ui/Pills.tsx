@@ -41,6 +41,7 @@ export function Pills<T extends string>({
   return (
     <ScrollView
       horizontal
+      style={styles.scroller}
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={styles.row}
       keyboardShouldPersistTaps="handled"
@@ -89,6 +90,7 @@ export function Pills<T extends string>({
 }
 
 const styles = StyleSheet.create({
+  scroller: { flexGrow: 0, flexShrink: 0 },
   row: { gap: 8, paddingHorizontal: 16, paddingVertical: 4 },
   pill: {
     flexDirection: "row",
