@@ -130,7 +130,7 @@ function ProfileHeader({
       <View style={{ alignItems: "center", gap: 4 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
           <Text variant="title">{p.name || p.username}</Text>
-          <RoleBadge role={p.role} />
+          <RoleBadge role={p.role} size={22} />
         </View>
         <Text tone="muted">@{p.username}</Text>
         {p.role === "mod" || p.role === "admin" ? <Badge label={p.role === "admin" ? "Admin" : "Moderator"} variant={p.role === "admin" ? "coral" : "primary"} /> : null}

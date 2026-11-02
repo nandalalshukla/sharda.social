@@ -77,7 +77,7 @@ function Account() {
                   <Text variant="heading" numberOfLines={1} style={{ flexShrink: 1 }}>
                     {user.name}
                   </Text>
-                  <RoleBadge role={user.role} />
+                  <RoleBadge role={user.role} size={19} />
                 </View>
                 <Text tone="muted">@{user.username}</Text>
                 <View style={{ flexDirection: "row", gap: 14, marginTop: 4 }}>

@@ -16,5 +16,6 @@ export * from "./Select";
 export * from "./Sheet";
 export * from "./Skeleton";
 export * from "./TabHeader";
+export * from "./VerifiedBadge";
 export * from "./Text";
 export * from "./Toast";

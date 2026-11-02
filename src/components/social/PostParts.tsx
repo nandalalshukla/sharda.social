@@ -1,19 +1,18 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
 import type { Post } from "@/api/types";
-import { Badge, FeatherName, Icon, Text } from "@/components/ui";
+import { Badge, FeatherName, Icon, Text, VerifiedBadge } from "@/components/ui";
 import { lostFoundKindMeta, resolveLostFoundCategory } from "@/constants/postMeta";
 import { useTheme } from "@/theme/ThemeProvider";
 import { radius } from "@/theme/tokens";
 import { formatDate } from "@/utils/format";
 
-/** Mods and admins carry a check, same as the website's VerifiedBadge. */
-export function RoleBadge({ role }: { role?: string }) {
-  const { colors } = useTheme();
+/** Moderators and admins carry the verified badge, as on X and Instagram. */
+export function RoleBadge({ role, size = 16 }: { role?: string; size?: number }) {
   if (role !== "mod" && role !== "admin") return null;
   return (
-    <View accessible accessibilityLabel={role === "admin" ? "Admin" : "Moderator"}>
-      <Icon name="check-circle" size={14} color={role === "admin" ? colors.coral : colors.primary} />
+    <View accessible accessibilityRole="image" accessibilityLabel={role === "admin" ? "Verified admin" : "Verified moderator"}>
+      <VerifiedBadge size={size} />
     </View>
   );
 }
