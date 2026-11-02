@@ -14,7 +14,7 @@ export interface CardProps {
   accessibilityLabel?: string;
 }
 
-export function Card({ children, onPress, style, padded = true, lift = 1, accessibilityLabel }: CardProps) {
+export function Card({ children, onPress, style, padded = true, lift = 0, accessibilityLabel }: CardProps) {
   const { colors } = useTheme();
   const body: StyleProp<ViewStyle> = [
     styles.base,

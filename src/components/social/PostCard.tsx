@@ -2,7 +2,6 @@ import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import React, { memo, useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
-import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring } from "react-native-reanimated";
 import type { Post } from "@/api/types";
 import { Avatar, Badge, Card, confirmDialog, FeatherName, Icon, PressableScale, Sheet, Text } from "@/components/ui";
 import { resolvePostTypeMeta } from "@/constants/postMeta";
@@ -13,7 +12,9 @@ import { useTheme } from "@/theme/ThemeProvider";
 import { compactNumber, timeAgo } from "@/utils/format";
 import { shareLink } from "@/utils/files";
 import { LikesSheet } from "./LikesSheet";
-import { HeartBurst, LostFoundBlock, ModerationBanner, RoleBadge } from "./PostParts";
+import { AnimatedHeart, HeartBurst, LIKE_RED } from "./AnimatedHeart";
+import { CommentsSheet } from "./CommentsSheet";
+import { LostFoundBlock, ModerationBanner, RoleBadge } from "./PostParts";
 import { PostMedia } from "./PostMedia";
 import { ReportSheet, ReportTarget } from "./ReportSheet";
 
@@ -24,9 +25,11 @@ interface PostCardProps {
   post: Post;
   /** True on the post's own screen: no tap-through, full text. */
   detail?: boolean;
+  /** Open the comments modal as soon as the card mounts (deep links, notifications). */
+  openComments?: boolean;
 }
 
-export const PostCard = memo(function PostCard({ post, detail = false }: PostCardProps) {
+export const PostCard = memo(function PostCard({ post, detail = false, openComments = false }: PostCardProps) {
   const router = useRouter();
   const { colors } = useTheme();
   const requireAuth = useRequireAuth();
@@ -36,6 +39,7 @@ export const PostCard = memo(function PostCard({ post, detail = false }: PostCar
   const [expanded, setExpanded] = useState(detail);
   const [menuOpen, setMenuOpen] = useState(false);
   const [likesOpen, setLikesOpen] = useState(false);
+  const [commentsOpen, setCommentsOpen] = useState(openComments);
   const [report, setReport] = useState<ReportTarget | null>(null);
   const [burst, setBurst] = useState(0);
   const lastTap = useRef(0);
@@ -111,7 +115,7 @@ export const PostCard = memo(function PostCard({ post, detail = false }: PostCar
   const lf = post.lostFound;
 
   return (
-    <Card padded={false} lift={1}>
+    <Card padded={false}>
       <View style={styles.pad}>
         <View style={styles.header}>
           <PressableScale
@@ -183,10 +187,7 @@ export const PostCard = memo(function PostCard({ post, detail = false }: PostCar
             icon="message-circle"
             label={compactNumber(post.commentCount)}
             accessibilityLabel={`${post.commentCount} comments`}
-            onPress={() => {
-              if (detail) return;
-              openPost();
-            }}
+            onPress={() => setCommentsOpen(true)}
           />
           <View style={{ flex: 1 }} />
           <ActionButton icon="share-2" accessibilityLabel="Share post" onPress={handleShare} />
@@ -247,6 +248,7 @@ export const PostCard = memo(function PostCard({ post, detail = false }: PostCar
       </Sheet>
 
       <LikesSheet postId={post._id} visible={likesOpen} onClose={() => setLikesOpen(false)} />
+      <CommentsSheet postId={post._id} visible={commentsOpen} onClose={() => setCommentsOpen(false)} count={post.commentCount} />
       <ReportSheet target={report} onClose={() => setReport(null)} />
     </Card>
   );
@@ -264,37 +266,11 @@ function LikeButton({
   onCountPress: () => void;
 }) {
   const { colors } = useTheme();
-  const scale = useSharedValue(1);
-  const first = useRef(true);
-
-  // Pop when it becomes liked — by tap or double-tap — but not on first render.
-  useEffect(() => {
-    if (first.current) {
-      first.current = false;
-      return;
-    }
-    if (liked) scale.value = withSequence(withSpring(1.4, { damping: 5, stiffness: 300 }), withSpring(1, { damping: 8 }));
-  }, [liked, scale]);
-
-  const iconStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
-  const tint = liked ? "#ff3b5c" : colors.mutedForeground;
-
   return (
     <View style={styles.likeWrap}>
-      <Pressable
-        onPress={onPress}
-        hitSlop={8}
-        accessibilityRole="button"
-        accessibilityLabel={liked ? "Unlike" : "Like"}
-        accessibilityState={{ selected: liked }}
-        style={styles.likeIcon}
-      >
-        <Animated.View style={iconStyle}>
-          <Icon name={liked ? "heart" : "heart-outline"} family="ion" size={23} color={tint} />
-        </Animated.View>
-      </Pressable>
+      <AnimatedHeart liked={liked} onPress={onPress} />
       <Pressable onPress={onCountPress} hitSlop={8} disabled={count === 0} accessibilityLabel={`${count} likes. See who liked`}>
-        <Text variant="small" weight="semibold" color={liked ? "#ff3b5c" : colors.mutedForeground}>
+        <Text variant="small" weight="semibold" color={liked ? LIKE_RED : colors.mutedForeground}>
           {compactNumber(count)}
         </Text>
       </Pressable>
@@ -363,8 +339,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderTopWidth: StyleSheet.hairlineWidth * 2,
   },
-  likeWrap: { flexDirection: "row", alignItems: "center", gap: 4, paddingRight: 8 },
-  likeIcon: { width: 38, height: 38, alignItems: "center", justifyContent: "center" },
+  likeWrap: { flexDirection: "row", alignItems: "center", gap: 0, paddingRight: 8 },
   action: { flexDirection: "row", alignItems: "center", gap: 6, height: 38, paddingHorizontal: 10 },
   menuRow: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderRadius: 14 },
 });

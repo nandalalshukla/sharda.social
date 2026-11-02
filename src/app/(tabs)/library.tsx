@@ -43,7 +43,7 @@ export default function LibraryHub() {
 
   return (
     <Screen>
-      <TabHeader title="Library" subtitle="Free study material for Sharda University" />
+      <TabHeader title="Library" />
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}

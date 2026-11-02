@@ -3,7 +3,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Switch, View } from "react-native";
+import { Platform, ScrollView, StyleSheet, Switch, View } from "react-native";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { z } from "zod";
 import * as authApi from "@/api/auth";
 import { getApiError } from "@/api/errors";
@@ -20,6 +22,7 @@ type Values = z.infer<typeof editProfileSchema>;
 
 export default function EditProfileScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const qc = useQueryClient();
   const { colors } = useTheme();
   const user = useAuthStore((s) => s.user);
@@ -103,7 +106,7 @@ export default function EditProfileScreen() {
   const hasPhoto = Boolean(photo || user?.profilePic?.url);
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.background }} behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={90}>
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.background }} behavior="padding" keyboardVerticalOffset={-insets.bottom}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <View style={{ alignItems: "center", gap: 10 }}>
           <PressableScale onPress={() => setPhotoMenu(true)} accessibilityRole="button" accessibilityLabel="Change profile photo">

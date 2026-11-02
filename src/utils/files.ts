@@ -1,4 +1,5 @@
 import { Directory, File, Paths } from "expo-file-system";
+import { router } from "expo-router";
 import * as Sharing from "expo-sharing";
 import * as WebBrowser from "expo-web-browser";
 import { Share } from "react-native";
@@ -34,24 +35,17 @@ export const isVideoUrl = (url: string) =>
   ["mp4", "webm", "ogg", "mov", "avi"].includes(fileExtension(url));
 
 /**
- * Opens a document the way the OS would for any link: PDFs and Office files
- * open in the in-app browser sheet, which handles viewing and its own
- * share/save controls. Nothing is downloaded up front.
+ * Opens a document in the app's own viewer (`app/viewer.tsx`) — the student
+ * never leaves the app. Nothing is downloaded up front.
  */
-export async function openDocument(src: string) {
+export async function openDocument(src: string, title?: string): Promise<void> {
   const url = resolveFileUrl(src);
-  // Browsers on both platforms can't render Office formats inline; the Google
-  // viewer can, and it also renders PDFs reliably on older Android WebViews.
-  const ext = fileExtension(url);
-  const viewable = ["doc", "docx", "ppt", "pptx"].includes(ext)
-    ? `https://docs.google.com/gview?embedded=1&url=${encodeURIComponent(url)}`
-    : url;
-  await WebBrowser.openBrowserAsync(viewable, {
-    toolbarColor: "#6366f1",
-    controlsColor: "#ffffff",
-    showTitle: true,
-    enableBarCollapsing: true,
-  });
+  router.push({ pathname: "/viewer", params: { url, title: title ?? fileNameFromUrl(url, "Document") } });
+}
+
+/** Hands the file to the system browser — an escape hatch from the viewer. */
+export async function openExternally(src: string): Promise<void> {
+  await WebBrowser.openBrowserAsync(resolveFileUrl(src), { toolbarColor: "#6366f1", controlsColor: "#ffffff" });
 }
 
 /**

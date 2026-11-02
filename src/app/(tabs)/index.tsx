@@ -85,8 +85,8 @@ export default function HomeScreen() {
   return (
     <Screen>
       <TabHeader
+        logo
         title="Sharda Social"
-        subtitle="Campus updates, events, opportunities and student life."
         right={
           status === "guest" ? (
             <Button title="Sign in" size="sm" onPress={() => router.push("/login")} />

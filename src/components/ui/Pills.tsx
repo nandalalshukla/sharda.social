@@ -64,7 +64,7 @@ export function Pills<T extends string>({
               small && styles.small,
               selected
                 ? { backgroundColor: active, borderColor: active }
-                : { backgroundColor: colors.card, borderColor: colors.border },
+                : { backgroundColor: colors.secondary, borderColor: "transparent" },
             ]}
           >
             {item.icon ? (

@@ -2,7 +2,6 @@ import { FlashList } from "@shopify/flash-list";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, TextInput, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { getErrorMessage } from "@/api/errors";
 import type { ResourceKind } from "@/api/types";
 import { FilterOptions, FilterSheet } from "@/components/library/FilterSheet";
@@ -17,14 +16,14 @@ import { useTheme } from "@/theme/ThemeProvider";
 import { fonts, MAX_CONTENT_WIDTH, radius } from "@/theme/tokens";
 
 export default function LibraryListScreen() {
-  const params = useLocalSearchParams<{ kind: string }>();
+  const params = useLocalSearchParams<{ kind: string; semester?: string }>();
   const kind: ResourceKind = isResourceKind(params.kind) ? params.kind : "pyqs";
   const meta = KIND_META[kind];
   const router = useRouter();
   const { colors } = useTheme();
 
   const [search, setSearch] = useState("");
-  const [applied, setApplied] = useState<LibraryFilters>(EMPTY_FILTERS);
+  const [applied, setApplied] = useState<LibraryFilters>({ ...EMPTY_FILTERS, semester: params.semester ?? null });
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selected, setSelected] = useState<LibraryEntry | null>(null);
 
@@ -72,7 +71,7 @@ export default function LibraryListScreen() {
   const accent = colors[meta.accent];
 
   return (
-    <SafeAreaView edges={["bottom"]} style={[styles.fill, { backgroundColor: colors.background }]}>
+    <View style={[styles.fill, { backgroundColor: colors.background }]}>
       <Stack.Screen
         options={{
           title: meta.title,
@@ -210,7 +209,7 @@ export default function LibraryListScreen() {
         onApply={(f) => setApplied({ ...f, query: "" })}
       />
       <ResourceSheet entry={selected} onClose={() => setSelected(null)} />
-    </SafeAreaView>
+    </View>
   );
 }
 

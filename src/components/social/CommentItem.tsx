@@ -8,6 +8,7 @@ import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useAuthStore } from "@/stores/auth";
 import { useTheme } from "@/theme/ThemeProvider";
 import { compactNumber, timeAgo } from "@/utils/format";
+import { AnimatedHeart } from "./AnimatedHeart";
 import { RoleBadge } from "./PostParts";
 import { ReportSheet, ReportTarget } from "./ReportSheet";
 
@@ -21,12 +22,22 @@ interface Props {
   parentId?: string;
   onReply: (comment: Comment) => void;
   onEdit: (comment: Comment) => void;
+  /** Close the surrounding modal, then run `go` — so a pushed screen isn't hidden behind it. */
+  onLeave?: (go: () => void) => void;
 }
 
-export const CommentItem = memo(function CommentItem({ comment, postId, depth = 0, parentId, onReply, onEdit }: Props) {
+export const CommentItem = memo(function CommentItem({ comment, postId, depth = 0, parentId, onReply, onEdit, onLeave }: Props) {
   const router = useRouter();
   const { colors } = useTheme();
-  const requireAuth = useRequireAuth();
+  const requireAuthRaw = useRequireAuth();
+  const authed = useAuthStore((s) => s.status === "authed");
+  // Inside a modal a pushed sign-in screen would sit behind it, so leave first.
+  const requireAuth = (reason: string) => {
+    if (authed || !onLeave) return requireAuthRaw(reason);
+    onLeave(() => requireAuthRaw(reason));
+    return false;
+  };
+  const navigate = (go: () => void) => (onLeave ? onLeave(go) : go());
   const viewerId = useAuthStore((s) => s.user?._id);
   const actions = useCommentActions(postId);
 
@@ -53,7 +64,7 @@ export const CommentItem = memo(function CommentItem({ comment, postId, depth = 
   return (
     <View style={[styles.row, depth > 0 && { marginLeft: Math.min(depth, MAX_INDENT) * 18 }]}>
       <Pressable
-        onPress={() => router.push({ pathname: "/profile/[userId]", params: { userId: comment.author._id } })}
+        onPress={() => navigate(() => router.push({ pathname: "/profile/[userId]", params: { userId: comment.author._id } }))}
         accessibilityRole="button"
         accessibilityLabel={`Open ${comment.author.username}'s profile`}
       >
@@ -78,20 +89,19 @@ export const CommentItem = memo(function CommentItem({ comment, postId, depth = 
         </View>
 
         <View style={styles.actions}>
-          <Pressable
-            onPress={() => requireAuth("like comments") && actions.like(comment)}
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel={liked ? "Unlike comment" : "Like comment"}
-            style={styles.action}
-          >
-            <Icon name={liked ? "heart" : "heart-outline"} family="ion" size={15} color={liked ? "#ff3b5c" : colors.mutedForeground} />
+          <View style={styles.action}>
+            <AnimatedHeart
+              liked={liked}
+              size={17}
+              onPress={() => requireAuth("like comments") && actions.like(comment)}
+              accessibilityLabel={liked ? "Unlike comment" : "Like comment"}
+            />
             {comment.likes > 0 ? (
-              <Text variant="caption" color={liked ? "#ff3b5c" : colors.mutedForeground}>
+              <Text variant="caption" color={liked ? "#ff2d55" : colors.mutedForeground} style={{ marginLeft: -6 }}>
                 {compactNumber(comment.likes)}
               </Text>
             ) : null}
-          </Pressable>
+          </View>
 
           <Pressable onPress={() => requireAuth("reply") && onReply(comment)} hitSlop={8} accessibilityRole="button" style={styles.action}>
             <Text variant="caption" tone="muted">
@@ -121,7 +131,7 @@ export const CommentItem = memo(function CommentItem({ comment, postId, depth = 
               </Text>
             ) : (
               replyList.map((r) => (
-                <CommentItem key={r._id} comment={r} postId={postId} depth={depth + 1} parentId={comment._id} onReply={onReply} onEdit={onEdit} />
+                <CommentItem key={r._id} comment={r} postId={postId} depth={depth + 1} parentId={comment._id} onReply={onReply} onEdit={onEdit} onLeave={onLeave} />
               ))
             )}
             {replies.hasNextPage ? (

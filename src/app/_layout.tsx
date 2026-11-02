@@ -11,9 +11,10 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
-import { StyleSheet, Text as RNText, View } from "react-native";
+import { Platform, StyleSheet, Text as RNText, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { SafeAreaProvider } from "react-native-safe-area-context";
+import { KeyboardProvider } from "react-native-keyboard-controller";
+import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import { AnimatedSplash } from "@/components/AnimatedSplash";
 import { DialogHost, iconFonts, ToastHost } from "@/components/ui";
 import { isApiConfigured } from "@/config/env";
@@ -26,6 +27,13 @@ import { fonts } from "@/theme/tokens";
 // over from there. Must run at module scope, before first render.
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 SplashScreen.setOptions({ duration: 250, fade: true });
+
+const FORM_SCREEN = {
+  headerShown: false,
+  presentation: Platform.OS === "ios" ? ("modal" as const) : ("card" as const),
+  animation: "slide_from_bottom" as const,
+  gestureEnabled: Platform.OS === "ios",
+};
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -45,20 +53,28 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={styles.fill}>
-      <SafeAreaProvider>
-        <ThemeProvider>
-          <QueryClientProvider client={queryClient}>
-            <AppShell />
-          </QueryClientProvider>
-        </ThemeProvider>
-      </SafeAreaProvider>
+      <KeyboardProvider statusBarTranslucent navigationBarTranslucent>
+        <SafeAreaProvider>
+          <ThemeProvider>
+            <QueryClientProvider client={queryClient}>
+              <AppShell />
+            </QueryClientProvider>
+          </ThemeProvider>
+        </SafeAreaProvider>
+      </KeyboardProvider>
     </GestureHandlerRootView>
   );
 }
 
 function AppShell() {
   const { colors, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const status = useAuthStore((s) => s.status);
+  // Pushed screens end above the system navigation bar / home indicator. The
+  // tab bar, the auth screen and the form screens already account for it
+  // themselves, so they opt out (contentStyle below) rather than pad twice.
+  const content = { backgroundColor: colors.background, paddingBottom: insets.bottom };
+  const selfInset = { backgroundColor: colors.background, paddingBottom: 0 };
   const bootstrap = useAuthStore((s) => s.bootstrap);
 
   useEffect(() => {
@@ -77,19 +93,22 @@ function AppShell() {
           headerTitleStyle: { fontFamily: fonts.bold, fontSize: 17 },
           headerShadowVisible: false,
           headerBackButtonDisplayMode: "minimal",
-          contentStyle: { backgroundColor: colors.background },
+          contentStyle: content,
           animation: "slide_from_right",
         }}
       >
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="(auth)" options={{ headerShown: false, presentation: "modal", animation: "slide_from_bottom" }} />
-        <Stack.Screen name="compose" options={{ title: "New post", presentation: "modal", animation: "slide_from_bottom" }} />
-        <Stack.Screen name="upload" options={{ title: "Share study material", presentation: "modal", animation: "slide_from_bottom" }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false, contentStyle: selfInset }} />
+        <Stack.Screen name="(auth)" options={{ headerShown: false, presentation: "modal", animation: "slide_from_bottom", contentStyle: selfInset }} />
+        {/* Form screens draw their own header (with a close button). iOS gets the native
+            card-modal; Android a plain slide-up — its "modal" presentation fades. */}
+        <Stack.Screen name="compose" options={{ ...FORM_SCREEN, contentStyle: selfInset }} />
+        <Stack.Screen name="upload" options={{ ...FORM_SCREEN, contentStyle: selfInset }} />
         <Stack.Screen name="post/[id]" options={{ title: "Post" }} />
         <Stack.Screen name="profile/[userId]" options={{ title: "Profile" }} />
         <Stack.Screen name="connections/[userId]" options={{ title: "Connections" }} />
         <Stack.Screen name="library/[kind]" options={{ title: "Library" }} />
         <Stack.Screen name="pyq/[id]" options={{ title: "Question paper" }} />
+        <Stack.Screen name="viewer" options={{ title: "Document" }} />
         <Stack.Screen name="my-uploads" options={{ title: "My uploads" }} />
         <Stack.Screen name="contributors" options={{ title: "Top contributors" }} />
         <Stack.Screen name="about" options={{ title: "About" }} />

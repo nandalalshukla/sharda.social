@@ -7,6 +7,7 @@ export * from "./EmptyState";
 export * from "./Icon";
 export * from "./Input";
 export * from "./ListRow";
+export * from "./ModalHeader";
 export * from "./Pills";
 export * from "./PressableScale";
 export * from "./ProgressBar";

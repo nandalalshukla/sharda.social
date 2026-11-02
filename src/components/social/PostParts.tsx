@@ -1,13 +1,5 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { StyleSheet, View } from "react-native";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withDelay,
-  withSequence,
-  withSpring,
-  withTiming,
-} from "react-native-reanimated";
 import type { Post } from "@/api/types";
 import { Badge, FeatherName, Icon, Text } from "@/components/ui";
 import { lostFoundKindMeta, resolveLostFoundCategory } from "@/constants/postMeta";
@@ -96,33 +88,10 @@ export function LostFoundBlock({ post }: { post: Post }) {
   );
 }
 
-/** Instagram-style heart that pops up and fades after a double tap. */
-export function HeartBurst({ trigger }: { trigger: number }) {
-  const scale = useSharedValue(0);
-  const opacity = useSharedValue(0);
-
-  useEffect(() => {
-    if (trigger === 0) return;
-    scale.value = 0.3;
-    opacity.value = 1;
-    scale.value = withSequence(withSpring(1.15, { damping: 8 }), withDelay(250, withTiming(1.3, { duration: 200 })));
-    opacity.value = withSequence(withTiming(1, { duration: 80 }), withDelay(420, withTiming(0, { duration: 260 })));
-  }, [trigger, scale, opacity]);
-
-  const style = useAnimatedStyle(() => ({ opacity: opacity.value, transform: [{ scale: scale.value }] }));
-
-  return (
-    <Animated.View pointerEvents="none" style={[styles.burst, style]}>
-      <Icon name="heart" family="ion" size={84} color="#ff3b5c" />
-    </Animated.View>
-  );
-}
-
 const styles = StyleSheet.create({
   banner: { flexDirection: "row", gap: 10, padding: 12, borderRadius: radius.lg, borderWidth: 1 },
   lf: { borderRadius: radius.lg, borderWidth: 1, padding: 14, gap: 8 },
   lfHead: { flexDirection: "row", alignItems: "center", gap: 12 },
   lfIcon: { width: 38, height: 38, borderRadius: radius.md, alignItems: "center", justifyContent: "center" },
   lfRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  burst: { position: "absolute", alignSelf: "center", top: "30%", zIndex: 5 },
 });

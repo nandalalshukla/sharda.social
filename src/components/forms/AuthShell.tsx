@@ -2,16 +2,20 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React from "react";
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon, Text } from "@/components/ui";
 import { useTheme } from "@/theme/ThemeProvider";
-import { elevation, MAX_CONTENT_WIDTH, radius } from "@/theme/tokens";
+import { elevation, radius } from "@/theme/tokens";
+
+const TOP_BAR = 56;
 
 /**
- * The frame every sign-in screen shares: a soft gradient header with the
- * logo, a title, and the form in a card that rises into place.
+ * The frame every sign-in screen shares. The logo, title and form sit in one
+ * column that is centred both ways (and scrolls when the keyboard or a small
+ * screen leaves too little room), with a soft wash of colour behind it.
  */
 export function AuthShell({
   title,
@@ -19,6 +23,7 @@ export function AuthShell({
   error,
   children,
   footer,
+  variant = "back",
 }: {
   title: string;
   subtitle?: string;
@@ -26,102 +31,105 @@ export function AuthShell({
   error?: string | null;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  /** "close" on the entry screen (dismisses the sheet), "back" on the ones pushed after it. */
+  variant?: "close" | "back";
 }) {
   const { colors, isDark } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: colors.background }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: insets.bottom + 24 }}
-      >
-        <LinearGradient
-          colors={isDark ? ["#2a2560", colors.background] : ["#e0e4ff", colors.background]}
-          style={[styles.hero, { paddingTop: Math.max(insets.top, 16) + 8 }]}
-        >
-          <Pressable
-            onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
-            hitSlop={12}
-            accessibilityRole="button"
-            accessibilityLabel="Close"
-            style={[styles.close, { backgroundColor: colors.card }]}
-          >
-            <Icon name="x" size={18} />
-          </Pressable>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <LinearGradient
+        pointerEvents="none"
+        colors={isDark ? ["#2a2560", colors.background] : ["#e6e9ff", colors.background]}
+        style={styles.wash}
+      />
 
-          <Animated.View entering={FadeInUp.duration(500).springify().damping(14)} style={styles.logoWrap}>
+      <KeyboardAvoidingView style={styles.fill} behavior="padding">
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+          contentContainerStyle={[
+            styles.scroll,
+            // Reserve the top bar and the system insets so nothing centres underneath them.
+            { paddingTop: insets.top + TOP_BAR, paddingBottom: insets.bottom + 24 },
+          ]}
+        >
+          <Animated.View entering={FadeInUp.duration(450)} style={styles.hero}>
             <Image source={require("../../../assets/logo.png")} style={styles.logo} contentFit="contain" />
-          </Animated.View>
-          <Animated.View entering={FadeInDown.delay(100).duration(450)} style={{ alignItems: "center", gap: 6 }}>
             <Text variant="title" align="center">
               {title}
             </Text>
             {subtitle ? (
-              <Text tone="muted" align="center" style={{ maxWidth: 320 }}>
+              <Text tone="muted" align="center" style={styles.subtitle}>
                 {subtitle}
               </Text>
             ) : null}
           </Animated.View>
-        </LinearGradient>
 
-        <Animated.View
-          entering={FadeInDown.delay(180).duration(500)}
-          style={[
-            styles.card,
-            { backgroundColor: colors.card, borderColor: colors.border },
-            elevation(2, colors.shadow),
-          ]}
-        >
-          {error ? (
-            <View
-              accessibilityLiveRegion="assertive"
-              style={[styles.error, { backgroundColor: `${colors.destructive}18`, borderColor: `${colors.destructive}55` }]}
-            >
-              <Icon name="alert-circle" size={18} color={colors.destructive} />
-              <Text variant="small" tone="destructive" weight="semibold" style={{ flex: 1 }}>
-                {error}
-              </Text>
-            </View>
-          ) : null}
-          {children}
-        </Animated.View>
+          <Animated.View
+            entering={FadeInDown.delay(120).duration(450)}
+            style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }, elevation(isDark ? 0 : 2, colors.shadow)]}
+          >
+            {error ? (
+              <View
+                accessibilityLiveRegion="assertive"
+                style={[styles.error, { backgroundColor: `${colors.destructive}18`, borderColor: `${colors.destructive}55` }]}
+              >
+                <Icon name="alert-circle" size={18} color={colors.destructive} />
+                <Text variant="small" tone="destructive" weight="semibold" style={{ flex: 1 }}>
+                  {error}
+                </Text>
+              </View>
+            ) : null}
+            {children}
+          </Animated.View>
 
-        {footer ? <View style={styles.footer}>{footer}</View> : null}
-      </ScrollView>
-    </KeyboardAvoidingView>
+          {footer ? <View style={styles.footer}>{footer}</View> : null}
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      <Pressable
+        onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
+        hitSlop={12}
+        accessibilityRole="button"
+        accessibilityLabel={variant === "close" ? "Close" : "Back"}
+        style={[styles.close, { top: insets.top + 8, backgroundColor: colors.card, borderColor: colors.border }]}
+      >
+        <Icon name={variant === "close" ? "x" : "arrow-left"} size={19} />
+      </Pressable>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  hero: { alignItems: "center", paddingHorizontal: 24, paddingBottom: 28, gap: 14 },
-  close: {
-    position: "absolute",
-    left: 16,
-    top: 54,
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 2,
-  },
-  logoWrap: { marginTop: 4 },
-  logo: { width: 88, height: 88 },
+  fill: { flex: 1 },
+  wash: { position: "absolute", top: 0, left: 0, right: 0, height: 360 },
+  scroll: { flexGrow: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 20, gap: 22 },
+  hero: { alignItems: "center", gap: 8, width: "100%" },
+  logo: { width: 72, height: 72, marginBottom: 6 },
+  subtitle: { maxWidth: 320 },
   card: {
-    width: "92%",
-    maxWidth: MAX_CONTENT_WIDTH - 80,
-    alignSelf: "center",
+    width: "100%",
+    maxWidth: 440,
     borderRadius: radius["2xl"],
     borderWidth: StyleSheet.hairlineWidth * 2,
     padding: 22,
     gap: 16,
   },
   error: { flexDirection: "row", alignItems: "center", gap: 10, padding: 12, borderRadius: radius.md, borderWidth: 1 },
-  footer: { alignItems: "center", paddingTop: 20, paddingHorizontal: 24, gap: 6 },
+  footer: { alignItems: "center", gap: 6, paddingHorizontal: 12 },
+  close: {
+    position: "absolute",
+    left: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 5,
+  },
 });

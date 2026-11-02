@@ -1,16 +1,17 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Keyboard, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { z } from "zod";
 import { getApiError } from "@/api/errors";
 import { updateResource, uploadResource } from "@/api/library";
 import type { ResourceKind } from "@/api/types";
 import { FormInput } from "@/components/forms/FormInput";
-import { Button, Card, Icon, Pills, ProgressBar, Select, Text, toast } from "@/components/ui";
+import { Button, Card, Icon, ModalHeader, Pills, ProgressBar, Select, Text, toast } from "@/components/ui";
 import { academicYears, isResourceKind, KIND_META, KIND_ORDER, SEMESTERS } from "@/constants/library";
 import { PROGRAM_OPTIONS } from "@/constants/programs";
 import { useMyResources } from "@/hooks/library";
@@ -57,6 +58,11 @@ export default function UploadScreen() {
     });
   }, [existing, reset]);
 
+  const close = () => {
+    Keyboard.dismiss();
+    router.back();
+  };
+
   const chooseFile = async () => {
     try {
       const picked = await pickStudyFile();
@@ -98,7 +104,7 @@ export default function UploadScreen() {
       else await uploadResource(kind, input, setProgress);
 
       qc.invalidateQueries({ queryKey: ["mine"] });
-      router.back();
+      close();
       setTimeout(() => toast.success(editing ? "Updated — it will be re-reviewed" : "Thanks! A moderator will review it shortly."), 350);
     } catch (e) {
       setError(getApiError(e).message);
@@ -106,20 +112,9 @@ export default function UploadScreen() {
   });
 
   return (
-    <SafeAreaView edges={["bottom"]} style={{ flex: 1, backgroundColor: colors.background }}>
-      <Stack.Screen
-        options={{
-          title: editing ? `Edit ${meta.noun.toLowerCase()}` : "Share study material",
-          headerLeft: () => (
-            <Pressable onPress={() => router.back()} hitSlop={10} accessibilityRole="button">
-              <Text tone="primary" weight="semibold">
-                Cancel
-              </Text>
-            </Pressable>
-          ),
-        }}
-      />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={90}>
+    <SafeAreaView edges={["top", "bottom"]} style={{ flex: 1, backgroundColor: colors.background }}>
+      <ModalHeader title={editing ? `Edit ${meta.noun.toLowerCase()}` : "Share study material"} onClose={close} />
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           {!editing ? <Pills items={KIND_PILLS} value={kind} onChange={setKind} accent={meta.accent} /> : null}
 

@@ -39,7 +39,12 @@ export function ResourceDetail({ entry, onNavigateAway }: { entry: LibraryEntry;
 
   const open = (src: string) => {
     setError(null);
-    openDocument(src).catch((e) => setError(getErrorMessage(e)));
+    const go = () => openDocument(src, entry.title).catch((e) => setError(getErrorMessage(e)));
+    if (onNavigateAway) {
+      // A screen pushed beneath an open sheet would be hidden by it: close first.
+      onNavigateAway();
+      setTimeout(go, 300);
+    } else go();
   };
 
   return (

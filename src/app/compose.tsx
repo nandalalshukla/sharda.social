@@ -1,7 +1,8 @@
 import { Image } from "expo-image";
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Switch, View } from "react-native";
+import { Keyboard, Pressable, ScrollView, StyleSheet, Switch, View } from "react-native";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getApiError } from "@/api/errors";
 import type { LostFoundCategory, LostFoundKind, PostType } from "@/api/types";
@@ -9,8 +10,10 @@ import { DateField } from "@/components/forms/DateField";
 import {
   Avatar,
   Button,
+  confirmDialog,
   Icon,
   Input,
+  ModalHeader,
   Pills,
   PressableScale,
   ProgressBar,
@@ -102,6 +105,28 @@ export default function ComposeScreen() {
   const needsApproval = postWillNeedApproval(type, user?.role);
   const canSubmit = content.trim().length > 0 && (!isLostFound || itemName.trim().length > 0) && !save.isPending;
 
+  // Dismiss the keyboard first: closing with it open makes the slide-out judder.
+  const close = () => {
+    Keyboard.dismiss();
+    router.back();
+  };
+
+  const hasDraft = !editing && (content.trim().length > 0 || files.length > 0);
+  const requestClose = async () => {
+    if (hasDraft && !save.isPending) {
+      Keyboard.dismiss();
+      const discard = await confirmDialog({
+        title: "Discard this post?",
+        message: "What you've written won't be saved.",
+        confirmLabel: "Discard",
+        cancelLabel: "Keep editing",
+        destructive: true,
+      });
+      if (!discard) return;
+    }
+    close();
+  };
+
   const addFiles = async (picker: (limit: number) => Promise<PickedFile[]>) => {
     const room = MAX_POST_FILES - totalFiles;
     if (room <= 0) {
@@ -138,6 +163,7 @@ export default function ComposeScreen() {
         },
         onProgress: setProgress,
       });
+      Keyboard.dismiss();
       router.back();
       // Raised after the modal closes — a toast under a native modal is invisible.
       setTimeout(
@@ -153,21 +179,9 @@ export default function ComposeScreen() {
   };
 
   return (
-    <SafeAreaView edges={["bottom"]} style={{ flex: 1, backgroundColor: colors.background }}>
-      <Stack.Screen
-        options={{
-          title: editing ? "Edit post" : "New post",
-          headerLeft: () => (
-            <Pressable onPress={() => router.back()} hitSlop={10} accessibilityRole="button">
-              <Text tone="primary" weight="semibold">
-                Cancel
-              </Text>
-            </Pressable>
-          ),
-        }}
-      />
-
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={90}>
+    <SafeAreaView edges={["top", "bottom"]} style={{ flex: 1, backgroundColor: colors.background }}>
+      <ModalHeader title={editing ? "Edit post" : "New post"} onClose={requestClose} />
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <View style={styles.author}>
             <Avatar uri={user?.profilePic?.url} name={user?.username} size={44} />

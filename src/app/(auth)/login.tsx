@@ -42,6 +42,7 @@ export default function LoginScreen() {
 
   return (
     <AuthShell
+      variant="close"
       title="Welcome back"
       subtitle="Sign in with your Sharda student email to join the conversation."
       error={formError}

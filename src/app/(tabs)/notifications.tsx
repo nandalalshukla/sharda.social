@@ -51,7 +51,11 @@ function Inbox() {
     if (!n.isRead) readOne.mutate(n._id);
     const postId = n.post?._id ?? n.comment?.post;
     if (n.type === "follow" && n.actor?._id) router.push({ pathname: "/profile/[userId]", params: { userId: n.actor._id } });
-    else if (postId) router.push({ pathname: "/post/[id]", params: { id: postId } });
+    else if (postId) {
+      // Comment-type notifications land with the comments already open.
+      const wantsComments = n.type === "comment" || n.type === "reply";
+      router.push({ pathname: "/post/[id]", params: wantsComments ? { id: postId, comments: "1" } : { id: postId } });
+    }
   };
 
   return (

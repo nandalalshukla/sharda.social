@@ -1,10 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Keyboard,
-  KeyboardAvoidingView,
   Modal,
   PanResponder,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -17,6 +15,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/theme/ThemeProvider";
 import { MAX_CONTENT_WIDTH, radius } from "@/theme/tokens";
@@ -33,8 +32,10 @@ export interface SheetProps {
   footer?: React.ReactNode;
   /** Set false when the body manages its own scrolling (a FlatList). */
   scroll?: boolean;
-  /** Fraction of screen height the sheet may use. */
+  /** Fraction of the available height the sheet may use (shrinks with the keyboard). */
   maxHeight?: number;
+  /** Fill that height instead of sizing to the content — for lists such as comments. */
+  fill?: boolean;
 }
 
 const EXIT_MS = 200;
@@ -51,6 +52,7 @@ export function Sheet({
   footer,
   scroll = true,
   maxHeight = 0.9,
+  fill = false,
 }: SheetProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -117,12 +119,10 @@ export function Sheet({
   const Body = scroll ? ScrollView : View;
 
   return (
-    <Modal transparent visible animationType="none" onRequestClose={close} statusBarTranslucent>
-      <KeyboardAvoidingView
-        style={styles.fill}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        pointerEvents="box-none"
-      >
+    <Modal transparent visible animationType="none" onRequestClose={close} statusBarTranslucent navigationBarTranslucent>
+      {/* keyboard-controller handles Android edge-to-edge, where RN's own
+          KeyboardAvoidingView leaves inputs hidden behind the keyboard. */}
+      <KeyboardAvoidingView style={styles.fill} behavior="padding">
         <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: colors.overlay }, scrimStyle]}>
           <Pressable style={styles.fill} onPress={close} accessibilityLabel="Close" />
         </Animated.View>
@@ -133,7 +133,10 @@ export function Sheet({
               styles.sheet,
               {
                 backgroundColor: colors.card,
-                maxHeight: windowHeight * maxHeight,
+                // Percentages of the (keyboard-shrunk) parent, not of the window,
+                // so the sheet gets shorter as the keyboard comes up.
+                maxHeight: `${Math.round(maxHeight * 100)}%`,
+                ...(fill ? { height: `${Math.round(maxHeight * 100)}%` } : null),
                 paddingBottom: Math.max(insets.bottom, 12),
                 maxWidth: MAX_CONTENT_WIDTH + 80,
               },
@@ -164,10 +167,10 @@ export function Sheet({
               {...(scroll
                 ? { keyboardShouldPersistTaps: "handled", showsVerticalScrollIndicator: false, bounces: false }
                 : {})}
-              style={scroll ? undefined : { flexShrink: 1 }}
+              style={scroll ? undefined : fill ? { flex: 1 } : { flexShrink: 1 }}
               contentContainerStyle={scroll ? styles.content : undefined}
             >
-              {scroll ? children : <View style={styles.content}>{children}</View>}
+              {scroll ? children : <View style={[styles.content, fill && { flex: 1 }]}>{children}</View>}
             </Body>
 
             {footer ? <View style={styles.footer}>{footer}</View> : null}
